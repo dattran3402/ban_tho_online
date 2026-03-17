@@ -353,7 +353,7 @@
       </div>
       <div class="field">
         <label for="burnTimeInput">Thời gian cháy nhang (giây)</label>
-        <input type="number" id="burnTimeInput" min="1" max="3600" value="60" />
+        <input type="number" id="burnTimeInput" min="1" value="60" />
       </div>
       <button class="submit-btn" onclick="updateName()">Cập nhật</button>
       <button class="reset-btn" onclick="resetInfo()">Đặt lại thông tin</button>
@@ -395,7 +395,7 @@
 
       function getBurnSeconds() {
         var input = document.getElementById("burnTimeInput");
-        return input ? Math.max(1, Math.min(3600, parseInt(input.value, 10) || 60)) : 60;
+        return input ? Math.max(1, parseInt(input.value, 10) || 60) : 60;
       }
 
       function removeStickFromData(startTime) {
@@ -490,7 +490,7 @@
       /* ================= THỜI GIAN CHÁY ================= */
 
       document.getElementById("burnTimeInput").addEventListener("change", function () {
-        var sec = Math.max(1, Math.min(3600, parseInt(this.value, 10) || 60));
+        var sec = Math.max(1, parseInt(this.value, 10) || 60);
         this.value = sec;
         data.burnSeconds = sec;
         save();
