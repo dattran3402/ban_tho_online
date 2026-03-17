@@ -62,7 +62,7 @@
 
       @keyframes burn {
         from {
-          transform: scaleY(1);
+          transform: scaleY(var(--burn-initial, 1));
         }
         to {
           transform: scaleY(0);
@@ -368,7 +368,9 @@
         name: "Các cụ",
         img: "",
         burnSeconds: 60,
+        incenseSticks: [],
       };
+      if (!Array.isArray(data.incenseSticks)) data.incenseSticks = [];
 
       const incenseContainer = document.getElementById("incense");
 
@@ -396,24 +398,57 @@
         return input ? Math.max(1, Math.min(3600, parseInt(input.value, 10) || 60)) : 60;
       }
 
-      function createStick() {
-        const seconds = getBurnSeconds();
-        const stick = document.createElement("div");
+      function removeStickFromData(startTime) {
+        data.incenseSticks = data.incenseSticks.filter(function (s) { return s.startTime !== startTime; });
+        save();
+      }
+
+      function addStickElement(seconds, startTime, initialScale) {
+        if (initialScale == null) initialScale = 1;
+        var stick = document.createElement("div");
         stick.className = "stick burning";
+        stick.dataset.startTime = startTime;
         stick.style.setProperty("--burn-duration", seconds + "s");
+        stick.style.setProperty("--burn-initial", String(initialScale));
 
-        const smoke = document.createElement("div");
+        var smoke = document.createElement("div");
         smoke.className = "smoke";
-
         stick.appendChild(smoke);
         incenseContainer.appendChild(stick);
 
-        renderCount();
-
-        setTimeout(() => {
+        var ms = Math.max(0, Math.round(seconds * 1000));
+        setTimeout(function () {
           stick.remove();
+          removeStickFromData(startTime);
           renderCount();
-        }, seconds * 1000);
+        }, ms);
+      }
+
+      function createStick() {
+        var seconds = getBurnSeconds();
+        var startTime = Date.now();
+        data.incenseSticks.push({ startTime: startTime, burnSeconds: seconds });
+        save();
+
+        addStickElement(seconds, startTime, 1);
+        renderCount();
+      }
+
+      function restoreIncense() {
+        var now = Date.now();
+        var stillBurning = [];
+        for (var i = 0; i < data.incenseSticks.length; i++) {
+          var s = data.incenseSticks[i];
+          var elapsed = (now - s.startTime) / 1000;
+          var remaining = s.burnSeconds - elapsed;
+          if (remaining <= 0) continue;
+          stillBurning.push(s);
+          var initialScale = remaining / s.burnSeconds;
+          addStickElement(remaining, s.startTime, initialScale);
+        }
+        data.incenseSticks = stillBurning;
+        save();
+        renderCount();
       }
 
       function light() {
@@ -421,11 +456,13 @@
       }
 
       function removeIncense() {
-        const sticks = incenseContainer.children;
-        if (sticks.length > 0) {
-          sticks[sticks.length - 1].remove();
-          renderCount();
-        }
+        var sticks = incenseContainer.children;
+        if (sticks.length === 0) return;
+        var last = sticks[sticks.length - 1];
+        var startTime = parseInt(last.dataset.startTime, 10);
+        last.remove();
+        removeStickFromData(startTime);
+        renderCount();
       }
 
       /* ================= UPDATE ================= */
@@ -494,6 +531,7 @@
       });
 
       render();
+      restoreIncense();
     </script>
   </body>
 </html>
